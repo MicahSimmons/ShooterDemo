@@ -1,8 +1,8 @@
-# PhaserTutorial
-The Phaser 3.0 Tutorial Platform Game
+# Shooter Demo
+A short tutorial game for Phaser 3.x.
 
-This game was created based on the "Making your first Phaser 3 Game" tutorial.
-https://phaser.io/tutorials/making-your-first-phaser-3-game/part1
+This demo game shows:
+  * Rotating a sprite to face a location
+  * Spawn of NPC object sprites
+  * A repeating "bullet" sprite generator
 
-A modified version of this tutorial is extended to include new graphical assets,
-a larger game world, and slightly modified game physics.
