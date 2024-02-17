@@ -1,4 +1,4 @@
-# PhaserTutorial
+# Shooter Demo
 A short tutorial game for Phaser 3.x.
 
 This demo game shows:
