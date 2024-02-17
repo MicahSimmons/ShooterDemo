@@ -1,140 +1,159 @@
 
+const BEAM_SPEED = 2000;
+const SPAWN_TIME = 3.0;
 
 class TutRunScene extends Phaser.Scene {
   constructor() {
     super("EnhRunScene");
+    this.rockHit = this.rockHit.bind(this);
   }
 
   init () {
-    this.platforms; 
     this.player;
-    this.cursors;
-    this.stars;
-    this.score = 0;
-    this.scoreText;
-    this.bombs;
+    this.target;
+    this.lasers;
+    this.rocks;
+
+    this.pointer = { x: 400, y: 300, angle: 0 };
+    this.now = 0;
+    this.spawnTimer = 0;
   }
 
   preload () {
-      this.load.image('sky', 'images/sky.png');
-      this.load.image('ground', 'images/platform.png');
-      this.load.image('star', 'images/star.png');
-      this.load.image('bomb', 'images/bomb.png');
-      this.load.spritesheet('dude', 
-          'images/dude.png',
-          { frameWidth: 32, frameHeight: 48 }
-      );
+      this.load.image('space', 'images/nebula.jpg');
+      this.load.image('ship', 'images/ship.png')
+      this.load.image('target', 'images/crosshair6.png');
+      this.load.image('laser', 'images/33.png');
+
+      this.load.spritesheet( 'rock1', 'images/asteroid1.png', { frameWidth: 128, frameHeight:128 });
+      this.load.spritesheet( 'boom', 'images/explosion.png', { frameWidth: 64, frameHeight:64 })
   }
 
   create () {
     /* Instance the background image */
-    this.add.image(400,300, 'sky');
-    //this.add.image(400,300, 'star');
+    this.add.image(400,300, 'space');
 
-    /* Create the static ground object and platforms */
-    this.platforms = this.physics.add.staticGroup();
-    this.platforms.create(400, 568, 'ground').setScale(2).refreshBody();
+    /* Player Sprite.  Resize, move control point of sprite to the center */
+    this.player = this.add.sprite(400, 300, 'ship');
+    this.player.setScale(0.3);
+    this.player.setOrigin(0.5);
+    this.player.setDepth(2);
 
-    this.platforms.create(600, 400, 'ground');
-    this.platforms.create(50, 250, 'ground');
-    this.platforms.create(750, 220, 'ground');
+    /* Mouse Pointer */  /* Capture Mouse Movement */
+    this.target = this.add.sprite(400, 300, 'target');
+    this.input.on('pointermove', (mouse) => { this.pointer.x = mouse.x ; this.pointer.y = mouse.y });
 
-    /* Create a player object */
-    this.player = this.physics.add.sprite(100, 450, 'dude');
-    this.player.setBounce(0.2);
-    this.player.setCollideWorldBounds(true);
+    /* Laser Beams */
+    this.lasers = this.physics.add.group();
+    this.input.on('pointerdown', (mouse) => { this.shoot() });
 
+    /* Asteroid */
     this.anims.create({
-      key: 'left',
-      frames: this.anims.generateFrameNumbers('dude', {start:0, end:3}),
+      key: 'spin',
+      frames: this.anims.generateFrameNumbers('rock1', {start:0, end:47}),
       frameRate: 10,
       repeat: -1
-    });
+    })
+    this.rocks = this.physics.add.group();
 
+    /* Explosion */
     this.anims.create({
-      key: 'turn',
-      frames: [ { key: 'dude', frame:4 }],
-      frameRate: 20
-    });
-
-    this.anims.create({
-      key: 'right',
-      frames: this.anims.generateFrameNumbers('dude', {start:5, end:8}),
-      frameRate: 10,
+      key: 'boom',
+      frames: this.anims.generateFrameNumbers('boom', {start:0, end:6}),
+      frameRate: 7,
       repeat: -1
-    });
+    })
 
-    /* Stars dynamic group */
-    this.stars = this.physics.add.group({
-      key: 'star',
-      repeat: 11,
-      setXY: { x: 12, y: 0, stepX: 70 }
-    });
-    this.stars.children.iterate((child) => child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8 )));
-
-    /* Create mobs dynamic group */
-    this.bombs = this.physics.add.group();
-
-    /* Setup Collider rules */
-    this.physics.add.collider(this.player, this.platforms);
-    this.physics.add.collider(this.stars, this.platforms);
-    this.physics.add.overlap(this.player, this.stars, 
-      (player, star) => {
-        star.disableBody(true, true)
-        this.score += 10;
-
-        if (this.stars.countActive(true) === 0) {
-          this.stars.children.iterate((child) => {
-            child.enableBody(true, child.x, 0, true, true);
-          });
-
-          var x = (this.player.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
-          var bomb = this.bombs.create(x, 16, 'bomb');
-          bomb.setBounce(1);
-          bomb.setCollideWorldBounds(true);
-          bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
-        }
-      }, null, this);
-
-    this.physics.add.collider(this.bombs, this.platforms);
-    this.physics.add.collider(this.player, this.bombs, this.hitBomb, null, this);
-
-    /* Setup keyboard control interactions */
-    this.cursors = this.input.keyboard.createCursorKeys();
-
-    /* Score textbox */
-    this.scoreText = this.add.text(16,16, 'score: 0', { fontSize: '32px', fill: '#000'});
-
+    /* Lasers can shoot rocks */
+    this.physics.add.collider(this.rocks, this.lasers, this.rockHit);
   }
 
-  hitBomb (player, bomb) {
-    this.physics.pause();
-    player.setTint(0xff0000);
-    player.anims.play('turn');
-    this.gameOver = true;
+  shoot () {
+    let beam = this.physics.add.sprite(400, 300, 'laser');
+    this.lasers.add(beam);
+    beam.rotation = this.pointer.angle;
+    beam.setVelocity( BEAM_SPEED * Math.cos(this.pointer.angle), 
+                      BEAM_SPEED * Math.sin(this.pointer.angle));
+    beam.setScale(0.5);
+    beam.setDepth(1);
   }
 
-  update () {
+  rockHit (rock, laser) {
+    let explosion = this.add.sprite(rock.x, rock.y, 'boom');
+    explosion.play('boom');
+    setTimeout(() => { explosion.destroy() }, 1000);
 
-    if (this.cursors.left.isDown) {
-      this.player.setVelocityX(-160);
-      this.player.anims.play('left', true);
-    } else if (this.cursors.right.isDown) {
-      this.player.setVelocityX(160);
-      this.player.anims.play('right', true);
-    } else {
-      this.player.setVelocityX(0);
-      this.player.anims.play('turn');
+    rock.destroy();
+    laser.destroy();
+  }
+
+  spawn () {
+    let spawnPoints = [
+      { x: -50, y: 50, dx: 100, dy: 0 },
+      { x: 850, y: 100, dx: -100, dy: 0 },
+      { x: -50, y: 550, dx: 100, dy: 0 },
+      { x: 850, y: 500, dx: -100, dy: 0 },
+      { x: -50, y: 300, dx: 75, dy: 75 },
+      { x: -50, y: 300, dx: 75,  dy: -75 },
+      { x: 850, y: 300, dx: -75, dy: 75 },
+      { x: 850, y: 300, dx: -75,  dy: -75 },
+
+    ]
+    let spawnPoint = spawnPoints[ Math.floor( Math.random() * spawnPoints.length )];
+    
+    let rock = this.physics.add.sprite(spawnPoint.x, spawnPoint.y, 'rock1');
+    this.rocks.add(rock);
+    rock.play('spin');
+    rock.setVelocity( spawnPoint.dx, spawnPoint.dy );
+
+    console.log(rock);
+  }
+
+  update (gameTime) {
+    let deltaTime = gameTime - this.now;
+    this.now = gameTime;
+
+    /* Make the target spin and follow the mouse pointer */
+    this.target.rotation += 1 * deltaTime;
+    this.target.x = this.pointer.x;
+    this.target.y = this.pointer.y;
+
+    /* Rotate the ship to face the mouse pointer */
+    let dy = this.pointer.y - this.player.y;
+    let dx = this.pointer.x - this.player.x;
+    this.pointer.angle = Math.atan2(dy, dx);
+    this.player.rotation = this.pointer.angle;
+
+    /* Make Rocks */
+    if ((this.spawnTimer <= 0) || (this.rocks.countActive() == 0)) {
+      this.spawn();
+      this.spawnTimer = SPAWN_TIME;
     }
+    this.spawnTimer -= deltaTime / (1000.0);
 
-    if (this.cursors.up.isDown && this.player.body.touching.down) {
-      this.player.setVelocityY(-330);
-    }
+    /* Destroy lasers if they go off the screen */
+    this.lasers.children.each ( (beam) => {
+      if ((beam.x > 850) ||
+          (beam.x < -50) ||
+          (beam.y > 650) ||
+          (beam.y < -50)) {
+            beam.destroy();
+          }
+    })
 
-    this.scoreText.setText('Score: ' + this.score);
+    /* Destroy rocks if they go off the screen */
+    this.rocks.children.each ( (rock) => {
+      if ((rock.x > 850) ||
+          (rock.x < -50) ||
+          (rock.y > 650) ||
+          (rock.y < -50)) {
+            rock.destroy();
+          }
+    })
+    
+
   }
 }
-
 
 class TutorialGame {
   constructor (dom_container) {
@@ -145,7 +164,7 @@ class TutorialGame {
       physics: {
         default: 'arcade',
         arcade: {
-          gravity: { y: 300 },
+          gravity: { y: 0 },
           debug: false
         }
       },

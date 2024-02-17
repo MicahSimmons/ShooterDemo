@@ -14,11 +14,16 @@
 </head>
 
 <body>
-  <h1>Phaser Game Tutorial (Week 4)</h1>
-  <ul>
-    <li><a href="./tutorial.html">Phaser Tutorial</a></li>
-    <li><a href="./enhanced.html">Customized Version</a></li>
-  </ul>
+  <h1>Sprite Rotation Demo</h1>
+  <div class="game" id="tutorial"></div>
+
+  <script src="./resources/bootstrap.min.js"></script>
+  <script src="./resources/phaser.min.js"></script>
+	<script src="./scripts/tutorial.js"></script>
+  <script>
+    var game_obj;
+    game_obj = new TutorialGame("tutorial");
+  </script>
 </body>
 
 <!--
