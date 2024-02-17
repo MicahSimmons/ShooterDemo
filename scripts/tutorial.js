@@ -9,11 +9,16 @@ class TutRunScene extends Phaser.Scene {
   }
 
   init () {
+    /* Sprite objects */
+    this.bg;
     this.player;
     this.target;
+
+    /* Sprite Groups */
     this.lasers;
     this.rocks;
 
+    /* Misc Data */
     this.pointer = { x: 400, y: 300, angle: 0 };
     this.now = 0;
     this.spawnTimer = 0;
@@ -31,7 +36,7 @@ class TutRunScene extends Phaser.Scene {
 
   create () {
     /* Instance the background image */
-    this.add.image(400,300, 'space');
+    this.bg = this.add.image(400,300, 'space');
 
     /* Player Sprite.  Resize, move control point of sprite to the center */
     this.player = this.add.sprite(400, 300, 'ship');
@@ -75,6 +80,7 @@ class TutRunScene extends Phaser.Scene {
     beam.setVelocity( BEAM_SPEED * Math.cos(this.pointer.angle), 
                       BEAM_SPEED * Math.sin(this.pointer.angle));
     beam.setScale(0.5);
+    beam.setSize(20, 20);
     beam.setDepth(1);
   }
 
@@ -112,6 +118,9 @@ class TutRunScene extends Phaser.Scene {
   update (gameTime) {
     let deltaTime = gameTime - this.now;
     this.now = gameTime;
+
+    /* Make the background spin */
+    this.bg.rotation -= 0.0005;
 
     /* Make the target spin and follow the mouse pointer */
     this.target.rotation += 1 * deltaTime;
