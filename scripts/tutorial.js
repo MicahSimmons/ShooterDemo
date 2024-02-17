@@ -32,9 +32,20 @@ class TutRunScene extends Phaser.Scene {
 
       this.load.spritesheet( 'rock1', 'images/asteroid1.png', { frameWidth: 128, frameHeight:128 });
       this.load.spritesheet( 'boom', 'images/explosion.png', { frameWidth: 64, frameHeight:64 })
+
+      this.load.audio('bg_music', 'sounds/music.mp3')
+      this.load.audio('shoot_sfx', 'sounds/laser4.wav');
+      this.load.audio('rock_sfx', 'sounds/rumble.mp3');
   }
 
   create () {
+    /* Music */
+    this.sfxShoot = this.sound.add('shoot_sfx');
+    this.sfxRock = this.sound.add('rock_sfx');
+    this.bgMusic = this.sound.add('bg_music');
+    this.bgMusic.loop = true;
+    this.bgMusic.play();
+
     /* Instance the background image */
     this.bg = this.add.image(400,300, 'space');
 
@@ -74,6 +85,8 @@ class TutRunScene extends Phaser.Scene {
   }
 
   shoot () {
+    this.sfxShoot.play();
+
     let beam = this.physics.add.sprite(400, 300, 'laser');
     this.lasers.add(beam);
     beam.rotation = this.pointer.angle;
@@ -89,6 +102,7 @@ class TutRunScene extends Phaser.Scene {
     explosion.play('boom');
     setTimeout(() => { explosion.destroy() }, 1000);
 
+    this.sfxRock.play();
     rock.destroy();
     laser.destroy();
   }
@@ -110,6 +124,7 @@ class TutRunScene extends Phaser.Scene {
     let rock = this.physics.add.sprite(spawnPoint.x, spawnPoint.y, 'rock1');
     this.rocks.add(rock);
     rock.play('spin');
+    rock.setSize(75, 75)
     rock.setVelocity( spawnPoint.dx, spawnPoint.dy );
 
     console.log(rock);
@@ -174,7 +189,7 @@ class TutorialGame {
         default: 'arcade',
         arcade: {
           gravity: { y: 0 },
-          debug: false
+          debug: true
         }
       },
       scene: [
