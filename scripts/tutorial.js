@@ -32,6 +32,7 @@ class TutRunScene extends Phaser.Scene {
 
       this.load.spritesheet( 'rock1', 'images/asteroid1.png', { frameWidth: 128, frameHeight:128 });
       this.load.spritesheet( 'boom', 'images/explosion.png', { frameWidth: 64, frameHeight:64 })
+      this.load.spritesheet( 'flame', 'images/fireSheet5x5.png', { frameWidth: 128, frameHeight:128 })
 
       this.load.audio('bg_music', 'sounds/music.mp3')
       this.load.audio('shoot_sfx', 'sounds/laser4.wav');
@@ -54,6 +55,9 @@ class TutRunScene extends Phaser.Scene {
     this.player.setScale(0.3);
     this.player.setOrigin(0.5);
     this.player.setDepth(2);
+
+    /* Exhaust Stream */
+    this.player.flames = new Exhaust({ scene: this, x:this.player.x, y:this.player.y});
 
     /* Mouse Pointer */  /* Capture Mouse Movement */
     this.target = this.add.sprite(400, 300, 'target');
@@ -80,8 +84,21 @@ class TutRunScene extends Phaser.Scene {
       repeat: -1
     })
 
+    /* Exhaust */
+    this.anims.create({
+      key: 'burn',
+      frames: this.anims.generateFrameNumbers("flame", {start:0, end:24}),
+      frameRate: 20,
+      repeat: -1
+    })
+
     /* Lasers can shoot rocks */
     this.physics.add.collider(this.rocks, this.lasers, this.rockHit);
+
+    /* Player Controls Engine */
+    this.keys = this.input.keyboard.addKeys({
+      action: 'SPACE'
+    });
   }
 
   shoot () {
@@ -147,6 +164,7 @@ class TutRunScene extends Phaser.Scene {
     let dx = this.pointer.x - this.player.x;
     this.pointer.angle = Math.atan2(dy, dx);
     this.player.rotation = this.pointer.angle;
+    this.player.flames.updateLoc(this.player.x, this.player.y, this.player.rotation);
 
     /* Make Rocks */
     if ((this.spawnTimer <= 0) || (this.rocks.countActive() == 0)) {
@@ -175,6 +193,12 @@ class TutRunScene extends Phaser.Scene {
           }
     })
     
+    /* Toggle Engine */
+    if (this.keys.action.isDown) {
+      this.player.flames.burn();
+    } else {
+      this.player.flames.stop();
+    }
 
   }
 }
